@@ -50,7 +50,7 @@ PrefsVaultGUID=
 PrefsRevisionGUID=
 
 [Document1]
-DocumentPath=..\..\..\..\..\..\..\Downloads\ERJP08D8251V\ERJP08D8251V.SchLib
+DocumentPath=..\..\..\..\..\..\..\Downloads\ERJP08D8251V\Resistors.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -67,7 +67,7 @@ GenerateClassCluster=0
 DocumentUniqueId=UAXQIIFC
 
 [Document2]
-DocumentPath=..\..\..\..\..\..\..\Downloads\APT3216SURCK\APT3216SURCK.SchLib
+DocumentPath=..\..\..\..\..\..\..\Downloads\APT3216SURCK\LED.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -84,7 +84,7 @@ GenerateClassCluster=0
 DocumentUniqueId=KWZXNDNB
 
 [Document3]
-DocumentPath=..\..\..\..\..\..\..\Downloads\B4B-XH-A\B4B-XH-A.SchLib
+DocumentPath=..\..\..\..\..\..\..\Downloads\B4B-XH-A\CP2102 + VL53L0X.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -101,7 +101,7 @@ GenerateClassCluster=0
 DocumentUniqueId=GZISFSIN
 
 [Document4]
-DocumentPath=..\..\..\..\..\..\..\Downloads\B3B-XH-A\B3B-XH-A.SchLib
+DocumentPath=..\..\..\..\..\..\..\Downloads\B3B-XH-A\LED_STICK.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -118,41 +118,7 @@ GenerateClassCluster=0
 DocumentUniqueId=TAUYVIHP
 
 [Document5]
-DocumentPath=..\..\..\..\..\..\..\Downloads\PTS636SM25FSMTRLFS\PTS636SM25FSMTRLFS.SchLib
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=0
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=VPSKLHCB
-
-[Document6]
-DocumentPath=..\..\..\..\..\..\..\Downloads\C1206F105K5RACTU\C1206F105K5RACTU.SchLib
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=0
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=DXUQNMUO
-
-[Document7]
-DocumentPath=B2B-XH-A.SchLib
+DocumentPath=..\..\..\..\..\..\..\Downloads\B2B-XH-A\TP4056 + Switch.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -168,8 +134,42 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=LMPMWSAT
 
+[Document6]
+DocumentPath=..\..\..\..\..\..\..\Downloads\PTS636SM25FSMTRLFS\Button.SchLib
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=0
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=VPSKLHCB
+
+[Document7]
+DocumentPath=..\..\..\..\..\..\..\Downloads\C1206F105K5RACTU\Capacitors.SchLib
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=0
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=DXUQNMUO
+
 [Document8]
-DocumentPath=..\..\..\..\..\..\..\Downloads\AP2112K-3.3TRG1\AP2112K-3.3TRG1.SchLib
+DocumentPath=..\..\..\..\..\..\..\Downloads\AP2112K-3.3TRG1\LDO.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -186,7 +186,7 @@ GenerateClassCluster=0
 DocumentUniqueId=DOUCVWOA
 
 [Document9]
-DocumentPath=..\..\..\..\..\..\..\Downloads\ESP32-WROOM-32E-N8 (1)\ESP32-WROOM-32E-N8.SchLib
+DocumentPath=..\..\..\..\..\..\..\Downloads\ESP32-WROOM-32E-N8 (1)\ESP32.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -209,7 +209,7 @@ AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
 AnnotateSuffix=
 AnnotateScope=All
-AnnotateOrder=-1
+AnnotateOrder=0
 DoLibraryUpdate=1
 DoDatabaseUpdate=1
 ClassGenCCAutoEnabled=1
@@ -237,7 +237,7 @@ GenerateClassCluster=0
 DocumentUniqueId=CEQPYPEE
 
 [Document12]
-DocumentPath=..\..\..\..\..\..\..\Downloads\ERJP08D8251V\RES_ERJP08D8251V.PcbLib
+DocumentPath=RES_ERJP08D8251V.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -271,7 +271,7 @@ GenerateClassCluster=0
 DocumentUniqueId=TNUFCDPD
 
 [Document14]
-DocumentPath=..\..\..\..\..\..\..\Downloads\B3B-XH-A\JST_B3B-XH-A.PcbLib
+DocumentPath=JST_B3B-XH-A.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -288,7 +288,7 @@ GenerateClassCluster=0
 DocumentUniqueId=RHJGBMJR
 
 [Document15]
-DocumentPath=..\..\..\..\..\..\..\Downloads\C1206F105K5RACTU\CAPC3216X110N.PcbLib
+DocumentPath=CAPC3216X110N.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -305,7 +305,7 @@ GenerateClassCluster=0
 DocumentUniqueId=KBOBIYHW
 
 [Document16]
-DocumentPath=..\..\..\..\..\..\..\Downloads\AP2112K-3.3TRG1\SOT95P285X140-5N.PcbLib
+DocumentPath=SOT95P285X140-5N.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -322,7 +322,7 @@ GenerateClassCluster=0
 DocumentUniqueId=VTJFVTQW
 
 [Document17]
-DocumentPath=..\..\..\..\..\..\..\Downloads\B4B-XH-A\JST_B4B-XH-A.PcbLib
+DocumentPath=JST_B4B-XH-A.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -356,7 +356,7 @@ GenerateClassCluster=0
 DocumentUniqueId=OPDLPUJO
 
 [Document19]
-DocumentPath=..\..\..\..\..\..\..\Downloads\APT3216SURCK\LED_APT3216SURCK.PcbLib
+DocumentPath=LED_APT3216SURCK.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -373,7 +373,7 @@ GenerateClassCluster=0
 DocumentUniqueId=OMBYTNNG
 
 [Document20]
-DocumentPath=..\..\..\..\..\..\..\Downloads\B2B-XH-A\JST_B2B-XH-A.PcbLib
+DocumentPath=JST_B2B-XH-A.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
