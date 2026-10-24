@@ -36,10 +36,13 @@ Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
 CRGB leds[NUMPIXELS];
 
-// Consumer Control only - deliberately NO keyboard usage page. iOS hides the
-// on-screen keyboard system-wide for anything that declares itself a keyboard,
-// which would stop the user typing in every app while SPARC is connected.
+// Consumer Control plus a wheel-only mouse - deliberately NO keyboard usage page.
+// iOS hides the on-screen keyboard system-wide for anything that declares itself
+// a keyboard, which would stop the user typing in every app while SPARC is
+// connected. The mouse exists only for scroll mode (Reels/Shorts): HID has no
+// "swipe" usage, so a wheel is the closest thing a peripheral can send.
 static const uint8_t REPORT_ID = 1;
+static const uint8_t MOUSE_REPORT_ID = 2;
 static uint8_t reportMap[] = {
   0x05, 0x0C,        // Usage Page (Consumer)
   0x09, 0x01,        // Usage (Consumer Control)
@@ -59,6 +62,35 @@ static uint8_t reportMap[] = {
   0x81, 0x02,        //   Input (Data, Variable, Absolute)
   0x95, 0x01,        //   Report Count (1)
   0x81, 0x03,        //   Input (Constant) - pad to a whole byte
+  0xC0,              // End Collection
+
+  0x05, 0x01,        // Usage Page (Generic Desktop)
+  0x09, 0x02,        // Usage (Mouse)
+  0xA1, 0x01,        // Collection (Application)
+  0x85, MOUSE_REPORT_ID, //   Report ID (2)
+  0x09, 0x01,        //   Usage (Pointer)
+  0xA1, 0x00,        //   Collection (Physical)
+  0x05, 0x09,        //     Usage Page (Button)
+  0x19, 0x01,        //     Usage Minimum (1)
+  0x29, 0x03,        //     Usage Maximum (3)
+  0x15, 0x00,        //     Logical Minimum (0)
+  0x25, 0x01,        //     Logical Maximum (1)
+  0x75, 0x01,        //     Report Size (1)
+  0x95, 0x03,        //     Report Count (3)
+  0x81, 0x02,        //     Input (Data, Variable, Absolute) - buttons
+  0x95, 0x01,        //     Report Count (1)
+  0x75, 0x05,        //     Report Size (5)
+  0x81, 0x03,        //     Input (Constant) - pad to a whole byte
+  0x05, 0x01,        //     Usage Page (Generic Desktop)
+  0x09, 0x30,        //     Usage (X)
+  0x09, 0x31,        //     Usage (Y)
+  0x09, 0x38,        //     Usage (Wheel)
+  0x15, 0x81,        //     Logical Minimum (-127)
+  0x25, 0x7F,        //     Logical Maximum (127)
+  0x75, 0x08,        //     Report Size (8)
+  0x95, 0x03,        //     Report Count (3)
+  0x81, 0x06,        //     Input (Data, Variable, Relative)
+  0xC0,              //   End Collection
   0xC0               // End Collection
 };
 
@@ -71,8 +103,36 @@ const uint8_t KEY_VOL_DOWN   = 1 << 6;
 // A zero-length press is ignored by some hosts, so hold the bit briefly.
 const unsigned long KEY_HOLD_MS = 15;
 
+// Scroll mode: skip/previous send a mouse-wheel burst instead of the media keys, so
+// they page through Instagram Reels / YouTube Shorts. The firmware can't see which
+// app is in front, so it's a toggle: keep holding past SCROLL_TOGGLE_HOLD_MS.
+// In scroll mode a hold is a mouse click (tap at the cursor) instead of the
+// play/pause key - iOS only routes that key to the Now Playing app, so it can't
+// pause a reel.
+// A burst of reports rather than one - a paging view only advances when the flick
+// is big enough, and a single wheel tick may not turn the page.
+const int8_t SCROLL_NEXT_DIR = -1;   // wheel direction that advances to the next video; flip if backwards
+const int8_t SCROLL_STEP = 8;        // wheel units per report
+const int SCROLL_REPORTS = 5;        // reports per skip
+const unsigned long SCROLL_GAP_MS = 10;
+
+// Wheel events often don't turn the page in a paging view (Reels/Shorts), so by
+// default fake a swipe instead: press, drag the cursor, release, then walk the
+// cursor back so repeated swipes don't drift it off the video. Set false for the
+// plain wheel (e.g. Android, where a drag selects instead of scrolling).
+const bool SCROLL_USE_DRAG = true;
+const int8_t DRAG_NEXT_DIR = -1;          // Y direction of the drag that advances (up the screen); flip if backwards
+const int8_t DRAG_STEP = 25;              // counts per report
+const int DRAG_REPORTS = 10;              // reports per swipe (~250 counts)
+const unsigned long DRAG_GAP_MS = 12;
+const unsigned long DRAG_SETTLE_MS = 30;  // between release and walking the cursor back
+const unsigned long SCROLL_TOGGLE_HOLD_MS = 1500;
+const unsigned long CLICK_HOLD_MS = 30;
+bool scrollMode = false;
+
 NimBLEHIDDevice *hid = nullptr;
 NimBLECharacteristic *inputReport = nullptr;
+NimBLECharacteristic *mouseReport = nullptr;
 NimBLEServer *pServer = nullptr;
 volatile bool bleConnected = false;
 volatile bool authDone = false;
@@ -136,6 +196,7 @@ const unsigned long FLASH_DURATION = 150;
 bool handInZone = false;
 unsigned long handEntryTime = 0;
 bool holdFired = false;
+bool playPauseFired = false;   // this dwell's hold was a play/pause - may still become a mode toggle
 
 int passCount = 0;
 unsigned long firstPassExitTime = 0;
@@ -162,11 +223,12 @@ const float VOLUME_DEADZONE_CM = 2.0; // how far from centre before it starts ra
 // The strip can't show the host's volume - nothing comes back over HID to read, and
 // an open-loop estimate desyncs the moment the user touches the volume themselves.
 // It confirms gestures instead, which needs no host state and so is never wrong.
-enum Anim { ANIM_NONE, ANIM_NEXT, ANIM_PREV, ANIM_PULSE, ANIM_VOL_UP, ANIM_VOL_DN, ANIM_VOL_WAIT };
+enum Anim { ANIM_NONE, ANIM_NEXT, ANIM_PREV, ANIM_PULSE, ANIM_VOL_UP, ANIM_VOL_DN, ANIM_VOL_WAIT, ANIM_MODE };
 Anim anim = ANIM_NONE;
 unsigned long animStart = 0;
 const unsigned long ANIM_STEP = 45;   // ms per LED
 const unsigned long PULSE_MS = 320;
+const unsigned long MODE_MS = 500;    // scroll mode toggle: two blinks
 const unsigned long FRAME_MS = 20;    // cap redraws; WS2812B writes are not free
 unsigned long lastFrame = 0;
 
@@ -330,6 +392,17 @@ void renderAnim() {
     return; // still non-expiring - just cycles until volumeMode/volumeActive changes
   }
 
+  if (anim == ANIM_MODE) {
+    // Scroll mode toggled: two blinks, green = on, orange = off.
+    if (t >= MODE_MS) { anim = ANIM_NONE; stripOff(); return; }
+    bool lit = ((t / (MODE_MS / 4)) % 2) == 0;
+    CRGB c = CRGB::Black;
+    if (lit) c = scrollMode ? CRGB(0, 255, 0) : CRGB(255, 100, 0);
+    fill_solid(leds, NUMPIXELS, c);
+    FastLED.show();
+    return;
+  }
+
   if (anim == ANIM_PULSE) {
     if (t >= PULSE_MS) { anim = ANIM_NONE; stripOff(); return; }
     uint8_t fade = 255 - (t * 255 / PULSE_MS);
@@ -376,6 +449,87 @@ void sendMediaKey(uint8_t mask, const char *label) {
 
   Serial.print("SENT: ");
   Serial.println(label);
+}
+
+// Mouse report is [buttons][x][y][wheel] - the report ID lives on the characteristic.
+void sendScroll(int8_t dir, const char *label) {
+  if (!bleConnected || mouseReport == nullptr) return;
+
+  uint8_t r[4] = {0, 0, 0, (uint8_t)(int8_t)(dir * SCROLL_STEP)};
+  for (int i = 0; i < SCROLL_REPORTS; i++) {
+    mouseReport->setValue(r, sizeof(r));
+    mouseReport->notify();
+    delay(SCROLL_GAP_MS);
+  }
+
+  Serial.print("SENT: ");
+  Serial.println(label);
+}
+
+void mouseSend(uint8_t buttons, int8_t dy) {
+  uint8_t r[4] = {buttons, 0, (uint8_t)dy, 0};
+  mouseReport->setValue(r, sizeof(r));
+  mouseReport->notify();
+}
+
+void sendDrag(int8_t dir, const char *label) {
+  if (!bleConnected || mouseReport == nullptr) return;
+
+  int8_t dy = dir * DRAG_STEP;
+  mouseSend(1, 0);                          // press before moving
+  delay(DRAG_GAP_MS);
+  for (int i = 0; i < DRAG_REPORTS; i++) {
+    mouseSend(1, dy);
+    delay(DRAG_GAP_MS);
+  }
+  mouseSend(0, 0);                          // release
+  delay(DRAG_SETTLE_MS);
+  for (int i = 0; i < DRAG_REPORTS; i++) {  // cursor back to where it started
+    mouseSend(0, -dy);
+    delay(DRAG_GAP_MS);
+  }
+
+  Serial.print("SENT: ");
+  Serial.println(label);
+}
+
+// Skip / previous: media key normally, swipe (or wheel burst) in scroll mode. Same
+// animation either way, so the strip still confirms the gesture.
+void doNext() {
+  if (!scrollMode) sendMediaKey(KEY_NEXT, "NEXT");
+  else if (SCROLL_USE_DRAG) sendDrag(DRAG_NEXT_DIR, "SWIPE NEXT");
+  else sendScroll(SCROLL_NEXT_DIR, "SCROLL NEXT");
+  startAnim(ANIM_NEXT);
+}
+
+void doPrev() {
+  if (!scrollMode) sendMediaKey(KEY_PREV, "PREV");
+  else if (SCROLL_USE_DRAG) sendDrag(-DRAG_NEXT_DIR, "SWIPE PREV");
+  else sendScroll(-SCROLL_NEXT_DIR, "SCROLL PREV");
+  startAnim(ANIM_PREV);
+}
+
+// Left click = a tap wherever the cursor sits. X/Y are never sent, so the cursor
+// stays where the host first put it (usually mid-screen, over the video).
+void sendClick(const char *label) {
+  if (!bleConnected || mouseReport == nullptr) return;
+
+  uint8_t r[4] = {1, 0, 0, 0};
+  mouseReport->setValue(r, sizeof(r));
+  mouseReport->notify();
+  delay(CLICK_HOLD_MS);
+  r[0] = 0;
+  mouseReport->setValue(r, sizeof(r));
+  mouseReport->notify();
+
+  Serial.print("SENT: ");
+  Serial.println(label);
+}
+
+// Play/pause key normally, tap in scroll mode.
+void doPlayPause() {
+  if (scrollMode) sendClick("CLICK");
+  else sendMediaKey(KEY_PLAY_PAUSE, "PLAY/PAUSE");
 }
 
 // Notification payload: [EntityID][AttributeID][flags][value as UTF-8].
@@ -527,6 +681,7 @@ void setup() {
 
   hid = new NimBLEHIDDevice(server);
   inputReport = hid->getInputReport(REPORT_ID);
+  mouseReport = hid->getInputReport(MOUSE_REPORT_ID);
   hid->setManufacturer("SPARC");
   hid->setPnp(0x02, 0x303A, 0x0001, 0x0100);
   hid->setHidInfo(0x00, 0x01);
@@ -592,6 +747,7 @@ void loop() {
     stripOff();
     flashPin = -1;
     resetGestureState();
+    scrollMode = false;
     handInZone = false;
     outOfRangeSince = 0;
     zoneMax = DEFAULT_ZONE_MAX;
@@ -672,6 +828,7 @@ void loop() {
     handInZone = true;
     handEntryTime = millis();
     holdFired = false;
+    playPauseFired = false;
     zoneEntryDist = current;
     lastInZoneDist = current;
   }
@@ -692,8 +849,7 @@ void loop() {
         passCount = 1;
         firstPassExitTime = millis();
       } else if (passCount == 1 && millis() - firstPassExitTime <= DOUBLE_PASS_WINDOW) {
-        sendMediaKey(KEY_PREV, "PREV");
-        startAnim(ANIM_PREV);
+        doPrev();
         passCount = 0;
       } else {
         passCount = 1;
@@ -748,16 +904,26 @@ void loop() {
         zoneEntryDist = current;
         lastInZoneDist = current;
       } else {
-        sendMediaKey(KEY_PLAY_PAUSE, "PLAY/PAUSE");
+        doPlayPause();
         startAnim(ANIM_PULSE);
         flashLed(ledPause);
+        playPauseFired = true;
       }
+    }
+
+    // Still holding well after the play/pause fired: that was the start of a mode
+    // toggle, not a pause. Undo it (in the mode it fired in) and flip scroll mode.
+    if (playPauseFired && millis() - handEntryTime >= SCROLL_TOGGLE_HOLD_MS) {
+      playPauseFired = false;
+      doPlayPause();
+      scrollMode = !scrollMode;
+      startAnim(ANIM_MODE);
+      Serial.println(scrollMode ? "Scroll mode ON" : "Scroll mode OFF");
     }
   }
 
   if (!handInZone && passCount == 1 && millis() - firstPassExitTime > DOUBLE_PASS_WINDOW) {
-    sendMediaKey(KEY_NEXT, "NEXT");
-    startAnim(ANIM_NEXT);
+    doNext();
     passCount = 0;
   }
 }
